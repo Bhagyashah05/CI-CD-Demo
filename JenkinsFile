@@ -1,31 +1,36 @@
 pipeline {
     agent any
+
     environment {
         DOCKER_IMAGE = "bhagyashah05/springboot-helloworld"
         DOCKER_REGISTRY = "docker.io"
     }
+
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code from GitHub repository
+                // Checkout code from GitHub
                 git branch: 'main', url: 'https://github.com/Bhagyashah05/CI-CD-Demo.git'
             }
         }
-        stage('Build') {
+
+        stage('Build and Package') {
             steps {
-                // Build the application (assumes Maven)
+                // Build the application using Maven
                 sh './mvnw clean package -DskipTests'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image
+                    // Build the Docker image
                     sh "docker build -t $DOCKER_IMAGE ."
                 }
             }
         }
-        stage('Push to Docker Hub') {
+
+        stage('Push Docker Image') {
             steps {
                 script {
                     // Push the Docker image to Docker Hub
@@ -38,18 +43,23 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Run Docker container (deploy the app)
-                    sh "docker run -d -p 8090:8090 $DOCKER_IMAGE"
+                    // Apply Kubernetes manifests to deploy the app
+                    sh """
+                        kubectl apply -f deployment.yaml
+                        kubectl apply -f service.yaml
+                    """
                 }
             }
         }
     }
+
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Pipeline executed successfully!'
         }
         failure {
             echo 'Pipeline failed!'
